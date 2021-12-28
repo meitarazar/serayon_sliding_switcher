@@ -1,0 +1,183 @@
+part of serayon_sliding_switcher;
+
+class SlidingWidgetSwitcher extends StatefulWidget {
+  final Widget firstChild;
+  final Widget secondChild;
+  final bool willChangeDirection;
+  final SlideOutDirection direction;
+  final SlidingSwitcherController slidingStateController;
+
+  //final GestureTapCallback? onTap;
+
+  const SlidingWidgetSwitcher({
+    Key? key,
+    required this.firstChild,
+    Widget? secondChild,
+    this.willChangeDirection = true,
+    required this.direction,
+    required this.slidingStateController,
+    //this.onTap,
+  })  : secondChild = secondChild ?? const SizedBox(),
+        super(key: key);
+
+  @override
+  State<SlidingWidgetSwitcher> createState() => _SlidingWidgetSwitcherState();
+}
+
+class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with SingleTickerProviderStateMixin, SlidingSwitcherListener {
+  static const Duration _animDuration = Duration(milliseconds: 350);
+
+  late AnimationController controller;
+
+  late Animation<Offset> translateOutAnimation;
+  late Animation<Offset> translateInAnimation;
+  late Animation<double> fadeOutAnimation;
+  late Animation<double> fadeInAnimation;
+
+  //GestureTapCallback? onTapState;
+
+  void initAnimations(SlideOutDirection direction) => WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+        if (!mounted) return;
+
+        Offset outOffset = _calcOutOffset(context, direction);
+
+        translateOutAnimation = Tween(begin: Offset.zero, end: outOffset).animate(
+          CurvedAnimation(
+            parent: controller,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
+          ),
+        );
+
+        translateInAnimation = Tween(begin: outOffset, end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: controller,
+            curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
+          ),
+        );
+      });
+
+  void animateToNone() {
+    if (controller.value > 0.5) {
+      controller.animateBack(0.5, duration: _animDuration);
+    } else {
+      controller.animateTo(0.5, duration: _animDuration);
+    }
+  }
+
+  @override
+  void onChangedState(SliderState newState) {
+    switch (controller.status) {
+      case AnimationStatus.completed:
+      case AnimationStatus.forward:
+        if (newState == SliderState.none) {
+          animateToNone();
+        } else if (newState == SliderState.first) {
+          controller.animateBack(0.0, duration: _animDuration);
+        }
+        break;
+      case AnimationStatus.dismissed:
+      case AnimationStatus.reverse:
+        if (newState == SliderState.none) {
+          animateToNone();
+        } else if (newState == SliderState.second) {
+          controller.animateTo(1.0, duration: _animDuration);
+        }
+        break;
+    }
+  }
+
+  @override
+  void onChangeDirection(SlideOutDirection newDirection) {
+    if (widget.willChangeDirection) {
+      initAnimations(newDirection);
+    }
+  }
+
+  @override
+  void initState() {
+    controller = AnimationController(
+      vsync: this,
+      duration: _animDuration,
+    )..addListener(() => setState(() {}))
+        /*..addStatusListener((status) {
+        switch (status) {
+          case AnimationStatus.dismissed:
+          case AnimationStatus.completed:
+            onTapState = widget.onTap;
+            break;
+          case AnimationStatus.forward:
+          case AnimationStatus.reverse:
+            onTapState = null;
+            break;
+        }
+      })*/
+        ;
+
+    translateOutAnimation = ConstantTween(Offset.zero).animate(controller);
+    translateInAnimation = ConstantTween(Offset.zero).animate(controller);
+
+    fadeOutAnimation = Tween(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      ),
+    );
+
+    fadeInAnimation = Tween(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    widget.slidingStateController._registerListener(this);
+
+    //onTapState = widget.onTap;
+
+    super.initState();
+
+    initAnimations(widget.direction);
+  }
+
+  @override
+  void didUpdateWidget(covariant SlidingWidgetSwitcher oldWidget) {
+    if (widget.direction != oldWidget.direction) initAnimations(widget.direction);
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    widget.slidingStateController._removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Transform.translate(
+          offset: translateOutAnimation.value,
+          child: Opacity(
+            opacity: fadeOutAnimation.value,
+            child: /*GestureDetector(
+              onTap: Feedback.wrapForTap(onTapState, context),
+              child: widget.firstChild,
+            )*/
+                widget.firstChild,
+          ),
+        ),
+        Transform.translate(
+          offset: translateInAnimation.value,
+          child: Opacity(
+            opacity: fadeInAnimation.value,
+            child: /*GestureDetector(
+              onTap: Feedback.wrapForTap(onTapState, context),
+              child: widget.secondChild,
+            )*/
+                widget.secondChild,
+          ),
+        ),
+      ],
+    );
+  }
+}
