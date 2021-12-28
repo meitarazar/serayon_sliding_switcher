@@ -7,8 +7,6 @@ class SlidingWidgetSwitcher extends StatefulWidget {
   final SlideOutDirection direction;
   final SlidingSwitcherController slidingStateController;
 
-  //final GestureTapCallback? onTap;
-
   const SlidingWidgetSwitcher({
     Key? key,
     required this.firstChild,
@@ -16,7 +14,6 @@ class SlidingWidgetSwitcher extends StatefulWidget {
     this.willChangeDirection = true,
     required this.direction,
     required this.slidingStateController,
-    //this.onTap,
   })  : secondChild = secondChild ?? const SizedBox(),
         super(key: key);
 
@@ -33,8 +30,6 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
   late Animation<Offset> translateInAnimation;
   late Animation<double> fadeOutAnimation;
   late Animation<double> fadeInAnimation;
-
-  //GestureTapCallback? onTapState;
 
   void initAnimations(SlideOutDirection direction) => WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
         if (!mounted) return;
@@ -98,20 +93,7 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
     controller = AnimationController(
       vsync: this,
       duration: _animDuration,
-    )..addListener(() => setState(() {}))
-        /*..addStatusListener((status) {
-        switch (status) {
-          case AnimationStatus.dismissed:
-          case AnimationStatus.completed:
-            onTapState = widget.onTap;
-            break;
-          case AnimationStatus.forward:
-          case AnimationStatus.reverse:
-            onTapState = null;
-            break;
-        }
-      })*/
-        ;
+    )..addListener(() => setState(() {}));
 
     translateOutAnimation = ConstantTween(Offset.zero).animate(controller);
     translateInAnimation = ConstantTween(Offset.zero).animate(controller);
@@ -131,8 +113,6 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
     );
 
     widget.slidingStateController._registerListener(this);
-
-    //onTapState = widget.onTap;
 
     super.initState();
 
@@ -159,22 +139,14 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
           offset: translateOutAnimation.value,
           child: Opacity(
             opacity: fadeOutAnimation.value,
-            child: /*GestureDetector(
-              onTap: Feedback.wrapForTap(onTapState, context),
-              child: widget.firstChild,
-            )*/
-                widget.firstChild,
+            child: widget.firstChild,
           ),
         ),
         Transform.translate(
           offset: translateInAnimation.value,
           child: Opacity(
             opacity: fadeInAnimation.value,
-            child: /*GestureDetector(
-              onTap: Feedback.wrapForTap(onTapState, context),
-              child: widget.secondChild,
-            )*/
-                widget.secondChild,
+            child: widget.secondChild,
           ),
         ),
       ],
