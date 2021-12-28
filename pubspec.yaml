@@ -1,7 +1,7 @@
 name: serayon_sliding_switcher
 description: A switcher widget that escape outside of the screen to be replaced with a different entering widget.
 version: 0.0.1
-#homepage:
+repository: https://github.com/meitarazar/serayon_sliding_switcher
 
 environment:
   sdk: ">=2.15.1 <3.0.0"
