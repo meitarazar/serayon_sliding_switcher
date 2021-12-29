@@ -1,18 +1,18 @@
 part of serayon_sliding_switcher;
 
 class SlidingWidgetSwitcher extends StatefulWidget {
+  final Duration duration;
   final Widget firstChild;
   final Widget secondChild;
-  final bool willChangeDirection;
   final bool canChangeDirection;
   final SlideOutDirection direction;
   final SlidingSwitcherController slidingStateController;
 
   const SlidingWidgetSwitcher({
     Key? key,
+    required this.duration,
     required this.firstChild,
     Widget? secondChild,
-    this.willChangeDirection = true,
     this.canChangeDirection = true,
     required this.direction,
     required this.slidingStateController,
@@ -24,8 +24,6 @@ class SlidingWidgetSwitcher extends StatefulWidget {
 }
 
 class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with SingleTickerProviderStateMixin, SlidingSwitcherListener {
-  static const Duration _animDuration = Duration(milliseconds: 350);
-
   late AnimationController controller;
 
   late Animation<Offset> translateOutAnimation;
@@ -55,9 +53,9 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
 
   void animateToNone() {
     if (controller.value > 0.5) {
-      controller.animateBack(0.5, duration: _animDuration);
+      controller.animateBack(0.5, duration: widget.duration);
     } else {
-      controller.animateTo(0.5, duration: _animDuration);
+      controller.animateTo(0.5, duration: widget.duration);
     }
   }
 
@@ -69,7 +67,7 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
         if (newState == SliderState.none) {
           animateToNone();
         } else if (newState == SliderState.first) {
-          controller.animateBack(0.0, duration: _animDuration);
+          controller.animateBack(0.0, duration: widget.duration);
         }
         break;
       case AnimationStatus.dismissed:
@@ -77,7 +75,7 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
         if (newState == SliderState.none) {
           animateToNone();
         } else if (newState == SliderState.second) {
-          controller.animateTo(1.0, duration: _animDuration);
+          controller.animateTo(1.0, duration: widget.duration);
         }
         break;
     }
@@ -85,7 +83,6 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
 
   @override
   void onChangeDirection(SlideOutDirection newDirection) {
-    if (widget.willChangeDirection) {
     if (widget.canChangeDirection) {
       initAnimations(newDirection);
     }
@@ -95,7 +92,7 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
   void initState() {
     controller = AnimationController(
       vsync: this,
-      duration: _animDuration,
+      duration: widget.duration,
     )..addListener(() => setState(() {}));
 
     translateOutAnimation = ConstantTween(Offset.zero).animate(controller);
