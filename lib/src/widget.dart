@@ -4,6 +4,7 @@ class SlidingWidgetSwitcher extends StatefulWidget {
   final Widget firstChild;
   final Widget secondChild;
   final bool willChangeDirection;
+  final bool canChangeDirection;
   final SlideOutDirection direction;
   final SlidingSwitcherController slidingStateController;
 
@@ -12,6 +13,7 @@ class SlidingWidgetSwitcher extends StatefulWidget {
     required this.firstChild,
     Widget? secondChild,
     this.willChangeDirection = true,
+    this.canChangeDirection = true,
     required this.direction,
     required this.slidingStateController,
   })  : secondChild = secondChild ?? const SizedBox(),
@@ -84,6 +86,7 @@ class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with Sing
   @override
   void onChangeDirection(SlideOutDirection newDirection) {
     if (widget.willChangeDirection) {
+    if (widget.canChangeDirection) {
       initAnimations(newDirection);
     }
   }
