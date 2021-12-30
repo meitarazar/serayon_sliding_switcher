@@ -1,151 +1,154 @@
 part of serayon_sliding_switcher;
 
-class SlidingWidgetSwitcher extends StatefulWidget {
+class SlidingSwitcherWidget extends StatefulWidget {
+  final SlidingSwitcherController slidingStateController;
   final Duration duration;
+  final bool canChangeDirection;
   final Widget firstChild;
   final Widget secondChild;
-  final bool canChangeDirection;
-  final SlideOutDirection direction;
-  final SlidingSwitcherController slidingStateController;
 
-  const SlidingWidgetSwitcher({
+  const SlidingSwitcherWidget({
     Key? key,
-    required this.duration,
+    required this.slidingStateController,
+    this.duration = const Duration(milliseconds: 350),
+    this.canChangeDirection = true,
     required this.firstChild,
     Widget? secondChild,
-    this.canChangeDirection = true,
-    required this.direction,
-    required this.slidingStateController,
   })  : secondChild = secondChild ?? const SizedBox(),
         super(key: key);
 
   @override
-  State<SlidingWidgetSwitcher> createState() => _SlidingWidgetSwitcherState();
+  State<SlidingSwitcherWidget> createState() => _SlidingSwitcherWidgetState();
 }
 
-class _SlidingWidgetSwitcherState extends State<SlidingWidgetSwitcher> with SingleTickerProviderStateMixin, SlidingSwitcherListener {
-  late AnimationController controller;
+class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with SingleTickerProviderStateMixin, SlidingSwitcherListener {
+  late AnimationController _controller;
 
-  late Animation<Offset> translateOutAnimation;
-  late Animation<Offset> translateInAnimation;
-  late Animation<double> fadeOutAnimation;
-  late Animation<double> fadeInAnimation;
+  late Animation<Offset> _translateOutAnimation;
+  late Animation<Offset> _translateInAnimation;
+  late Animation<double> _fadeOutAnimation;
+  late Animation<double> _fadeInAnimation;
 
-  void initAnimations(SlideOutDirection direction) => WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
-        if (!mounted) return;
+  void _updateAnimations() {
+    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      if (!mounted) return;
 
-        Offset outOffset = _calcOutOffset(context, direction);
+      Offset outOffset = _calcOutOffset(context, widget.slidingStateController.direction);
 
-        translateOutAnimation = Tween(begin: Offset.zero, end: outOffset).animate(
-          CurvedAnimation(
-            parent: controller,
-            curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
-          ),
-        );
+      _translateOutAnimation = Tween(begin: Offset.zero, end: outOffset).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
+        ),
+      );
 
-        translateInAnimation = Tween(begin: outOffset, end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: controller,
-            curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
-          ),
-        );
-      });
+      _translateInAnimation = Tween(begin: outOffset, end: Offset.zero).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
+        ),
+      );
+    });
+  }
 
-  void animateToNone() {
-    if (controller.value > 0.5) {
-      controller.animateBack(0.5, duration: widget.duration);
+  void _updateController() {
+    widget.slidingStateController.addListener(this);
+    _updateAnimations();
+  }
+
+  void _animateToTarget(double target) {
+    if (_controller.value > target) {
+      _controller.animateBack(target, duration: widget.duration);
     } else {
-      controller.animateTo(0.5, duration: widget.duration);
+      _controller.animateTo(target, duration: widget.duration);
     }
   }
 
   @override
-  void onChangedState(SliderState newState) {
-    switch (controller.status) {
-      case AnimationStatus.completed:
-      case AnimationStatus.forward:
-        if (newState == SliderState.none) {
-          animateToNone();
-        } else if (newState == SliderState.first) {
-          controller.animateBack(0.0, duration: widget.duration);
-        }
+  void onChangedState(SliderState oldState, SliderState newState) {
+    if (oldState == newState) return;
+
+    switch (newState) {
+      case SliderState.none:
+        _animateToTarget(0.5);
         break;
-      case AnimationStatus.dismissed:
-      case AnimationStatus.reverse:
-        if (newState == SliderState.none) {
-          animateToNone();
-        } else if (newState == SliderState.second) {
-          controller.animateTo(1.0, duration: widget.duration);
-        }
+      case SliderState.first:
+        _animateToTarget(0.0);
+        break;
+      case SliderState.second:
+        _animateToTarget(1.0);
         break;
     }
   }
 
   @override
-  void onChangeDirection(SlideOutDirection newDirection) {
+  void onChangeDirection(SlideOutDirection oldDirection, SlideOutDirection newDirection) {
     if (widget.canChangeDirection) {
-      initAnimations(newDirection);
+      _updateAnimations();
     }
   }
 
   @override
   void initState() {
-    controller = AnimationController(
+    _controller = AnimationController(
       vsync: this,
       duration: widget.duration,
     )..addListener(() => setState(() {}));
 
-    translateOutAnimation = ConstantTween(Offset.zero).animate(controller);
-    translateInAnimation = ConstantTween(Offset.zero).animate(controller);
+    _translateOutAnimation = ConstantTween(Offset.zero).animate(_controller);
+    _translateInAnimation = ConstantTween(Offset.zero).animate(_controller);
 
-    fadeOutAnimation = Tween(begin: 1.0, end: 0.0).animate(
+    _fadeOutAnimation = Tween(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
-        parent: controller,
+        parent: _controller,
         curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
 
-    fadeInAnimation = Tween(begin: 0.0, end: 1.0).animate(
+    _fadeInAnimation = Tween(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: controller,
+        parent: _controller,
         curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
       ),
     );
 
-    widget.slidingStateController._registerListener(this);
-
     super.initState();
 
-    initAnimations(widget.direction);
+    _updateController();
   }
 
   @override
-  void didUpdateWidget(covariant SlidingWidgetSwitcher oldWidget) {
-    if (widget.direction != oldWidget.direction) initAnimations(widget.direction);
+  void didUpdateWidget(covariant SlidingSwitcherWidget oldWidget) {
+    if (widget.slidingStateController != oldWidget.slidingStateController) {
+      oldWidget.slidingStateController.removeListener(this);
+      _updateController();
+    }
+
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void dispose() {
-    widget.slidingStateController._removeListener(this);
+    widget.slidingStateController.removeListener(this);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
+      alignment: Alignment.center,
       children: [
         Transform.translate(
-          offset: translateOutAnimation.value,
+          offset: _translateOutAnimation.value,
           child: Opacity(
-            opacity: fadeOutAnimation.value,
+            opacity: _fadeOutAnimation.value,
             child: widget.firstChild,
           ),
         ),
         Transform.translate(
-          offset: translateInAnimation.value,
+          offset: _translateInAnimation.value,
           child: Opacity(
-            opacity: fadeInAnimation.value,
+            opacity: _fadeInAnimation.value,
             child: widget.secondChild,
           ),
         ),

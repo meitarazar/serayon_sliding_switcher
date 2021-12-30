@@ -2,36 +2,49 @@ part of serayon_sliding_switcher;
 
 class SlidingSwitcherController {
   SliderState _state;
+  SlideOutDirection _direction;
   final List<SlidingSwitcherListener> _listeners;
 
-  SlidingSwitcherController({SliderState state = SliderState.first})
-      : _state = state,
+  SlidingSwitcherController({SliderState initState = SliderState.first, SlideOutDirection initDirection = SlideOutDirection.start})
+      : _state = initState,
+        _direction = initDirection,
         _listeners = [];
 
   SliderState get state => _state;
 
   set state(SliderState state) {
+    SliderState oldState = _state;
     _state = state;
-    _updateStateListeners();
+
+    _updateStateListeners(oldState);
   }
 
-  void _registerListener(SlidingSwitcherListener listener) {
+  SlideOutDirection get direction => _direction;
+
+  set direction(SlideOutDirection direction) {
+    SlideOutDirection oldDirection = _direction;
+    _direction = direction;
+
+    _updateDirectionListeners(oldDirection);
+  }
+
+  void addListener(SlidingSwitcherListener listener) {
     _listeners.add(listener);
   }
 
-  void _removeListener(SlidingSwitcherListener listener) {
+  void removeListener(SlidingSwitcherListener listener) {
     _listeners.remove(listener);
   }
 
-  void _updateStateListeners() {
+  void _updateStateListeners(SliderState oldState) {
     for (var listener in _listeners) {
-      listener.onChangedState(state);
+      listener.onChangedState(oldState, state);
     }
   }
 
-  void onChangeDirection(SlideOutDirection direction) {
+  void _updateDirectionListeners(SlideOutDirection oldDirection) {
     for (var listener in _listeners) {
-      listener.onChangeDirection(direction);
+      listener.onChangeDirection(oldDirection, direction);
     }
   }
 
