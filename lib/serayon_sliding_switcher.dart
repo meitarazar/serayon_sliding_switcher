@@ -16,8 +16,8 @@ enum SliderState { none, first, second }
 enum SlideOutDirection { left, right, start, end, up, down }
 
 extension Name on SlideOutDirection {
-  String get name {
-    switch(this) {
+  String get displayName {
+    switch (this) {
       case SlideOutDirection.left:
         return 'Left';
       case SlideOutDirection.right:

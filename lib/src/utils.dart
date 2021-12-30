@@ -13,39 +13,32 @@ Offset _calcOutOffset(BuildContext context, SlideOutDirection direction) {
   // selecting the correct out direction
   Offset outOffset;
   if (direction == SlideOutDirection.left) {
-    outOffset = outTopLeft.zeroY;
+    outOffset = outTopLeft.withZeroY;
   } else if (direction == SlideOutDirection.up) {
-    outOffset = outTopLeft.zeroX;
+    outOffset = outTopLeft.withZeroX;
   } else if (direction == SlideOutDirection.right) {
-    outOffset = outBottomRight.zeroY;
+    outOffset = outBottomRight.withZeroY;
   } else if (direction == SlideOutDirection.down) {
-    outOffset = outBottomRight.zeroX;
+    outOffset = outBottomRight.withZeroX;
   }
-  /*else if (direction == SlideOutDirection.start) {
-    if (directionality == TextDirection.ltr) {
-      outOffset = Offset.fromDirection(pi, outTopLeft.dx); // left is start of ltr
-    } else {
-      outOffset = Offset.fromDirection(0.0, outBottomRight.dx); // right is start of rtl
-    }
-  } else if (direction == SlideOutDirection.end) {
-    if (directionality == TextDirection.ltr) {
-      outOffset = Offset.fromDirection(0.0, outBottomRight.dx); // right is end of ltr
-    } else {
-      outOffset = Offset.fromDirection(pi, outTopLeft.dx); // left is end of rtl
-    }
-  }*/
 
-  // this 'if' statement is more complex than the upper start/end separate cases... but it's less rows...
+  // this 'else if' statement is a bit complex... but it's very short :D
+  // it comes after all the others to make sure that what's left are only start/end values
+  //
+  // Here's a truth table to explain it:
+  //
   // start  ltr | <   >
   // -------------------
-  // 0      0   | X
-  // 0      1   |     X
-  // 1      0   |     X
-  // 1      1   | X
+  // T      T   | X        // left  in ltr is the start
+  // T      F   |     X    // right in rtl is the start
+  // F      T   |     X    // right in rtl is the end
+  // F      F   | X        // left  in ltr is the end
+  //
+  // which means that when they are different we go right, and that's XOR
   else if ((direction == SlideOutDirection.start) ^ (Directionality.of(context) == TextDirection.ltr)) {
-    outOffset = outBottomRight.zeroY;
+    outOffset = outBottomRight.withZeroY;
   } else {
-    outOffset = outTopLeft.zeroY;
+    outOffset = outTopLeft.withZeroY;
   }
 
   return outOffset;
@@ -55,10 +48,14 @@ _RenderCoordinates _getRenderCoordinates(RenderObject? renderObject) {
   Size containerSize;
   Offset positionOnScreen;
 
+  // if it's a RenderBox we're in luck, that the easy one
   if (renderObject is RenderBox) {
     containerSize = renderObject.size;
     positionOnScreen = renderObject.localToGlobal(Offset.zero);
-  } else {
+  }
+
+  // if it's not, well... that's going to be ugly...
+  else {
     containerSize = renderObject?.paintBounds.size ?? Size.zero;
     Vector3 position3D = renderObject?.getTransformTo(null).getTranslation() ?? Vector3.zero();
     positionOnScreen = Offset(position3D.x, position3D.y);
@@ -69,10 +66,10 @@ _RenderCoordinates _getRenderCoordinates(RenderObject? renderObject) {
 
 extension _Intersect on Offset {
   /// Zeroing the dx value without changing the dy
-  Offset get zeroX => Offset(0.0, dy);
+  Offset get withZeroX => Offset(0.0, dy);
 
   /// Zeroing the dy value without changing the dx
-  Offset get zeroY => Offset(dx, 0.0);
+  Offset get withZeroY => Offset(dx, 0.0);
 }
 
 /// Holds the container size and the position on the screen of the rendered object

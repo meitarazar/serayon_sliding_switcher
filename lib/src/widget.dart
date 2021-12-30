@@ -5,17 +5,16 @@ class SlidingSwitcherWidget extends StatefulWidget {
   final Duration duration;
   final bool canChangeDirection;
   final Widget firstChild;
-  final Widget secondChild;
 
+  final Widget? secondChild;
   const SlidingSwitcherWidget({
     Key? key,
     required this.slidingStateController,
     this.duration = const Duration(milliseconds: 350),
     this.canChangeDirection = true,
     required this.firstChild,
-    Widget? secondChild,
-  })  : secondChild = secondChild ?? const SizedBox(),
-        super(key: key);
+    this.secondChild,
+  }) : super(key: key);
 
   @override
   State<SlidingSwitcherWidget> createState() => _SlidingSwitcherWidgetState();
@@ -29,11 +28,14 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
   late Animation<double> _fadeOutAnimation;
   late Animation<double> _fadeInAnimation;
 
+  late SlideOutDirection _direction;
   void _updateAnimations() {
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      // not mounted, [RenderObject] won't be valid
       if (!mounted) return;
 
-      Offset outOffset = _calcOutOffset(context, widget.slidingStateController.direction);
+      // calculating the out-of-screen [Offset] using the cached direction
+      Offset outOffset = _calcOutOffset(context, _direction);
 
       _translateOutAnimation = Tween(begin: Offset.zero, end: outOffset).animate(
         CurvedAnimation(
@@ -53,10 +55,16 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
 
   void _updateController() {
     widget.slidingStateController.addListener(this);
+
+    // when changing the controller, we must accept the new direction
+    _direction = widget.slidingStateController.direction;
     _updateAnimations();
   }
 
   void _animateToTarget(double target) {
+    // if we already here... why we need to move?
+    if (_controller.value == target) return;
+
     if (_controller.value > target) {
       _controller.animateBack(target, duration: widget.duration);
     } else {
@@ -66,24 +74,35 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
 
   @override
   void onChangedState(SliderState oldState, SliderState newState) {
+    // we're still at the same state, no need to update
     if (oldState == newState) return;
 
     switch (newState) {
       case SliderState.none:
+        // animating to [SliderState.none] is going half way
+        //   to the point when no child is visible on screen
         _animateToTarget(0.5);
         break;
       case SliderState.first:
         _animateToTarget(0.0);
         break;
       case SliderState.second:
-        _animateToTarget(1.0);
+        // we want to make the slide out animation look
+        //   slower when the second child is not present
+        if (widget.secondChild == null) {
+          _animateToTarget(0.5);
+        } else {
+          _animateToTarget(1.0);
+        }
         break;
     }
   }
 
   @override
   void onChangeDirection(SlideOutDirection oldDirection, SlideOutDirection newDirection) {
+    // update the translate animations only if the widget allows direction changing
     if (widget.canChangeDirection) {
+      _direction = newDirection;
       _updateAnimations();
     }
   }
@@ -120,8 +139,14 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
   @override
   void didUpdateWidget(covariant SlidingSwitcherWidget oldWidget) {
     if (widget.slidingStateController != oldWidget.slidingStateController) {
+      // if we have a new controller remove itself from the old one
       oldWidget.slidingStateController.removeListener(this);
       _updateController();
+    }
+
+    // the only baked duration is in the animation controller
+    else if (widget.duration != oldWidget.duration) {
+      _controller.duration = widget.duration;
     }
 
     super.didUpdateWidget(oldWidget);
