@@ -14,11 +14,11 @@ Offset _calcOutOffset(BuildContext context, SlideOutDirection direction) {
   Offset outOffset;
   if (direction == SlideOutDirection.left) {
     outOffset = outTopLeft.zeroY;
-  } else if (direction == SlideOutDirection.top) {
+  } else if (direction == SlideOutDirection.up) {
     outOffset = outTopLeft.zeroX;
   } else if (direction == SlideOutDirection.right) {
     outOffset = outBottomRight.zeroY;
-  } else if (direction == SlideOutDirection.bottom) {
+  } else if (direction == SlideOutDirection.down) {
     outOffset = outBottomRight.zeroX;
   }
   /*else if (direction == SlideOutDirection.start) {
