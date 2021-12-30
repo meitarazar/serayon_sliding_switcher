@@ -1,5 +1,11 @@
 part of serayon_sliding_switcher;
 
+/// Using a [BuildContext] to get the screen's [Size] and the current [RenderObject]'s
+/// container [Size] and [Offset] on the screen.
+///
+/// And, using the [SlideOutDirection] to return an out-of-screen [Offset]
+/// in the desired direction. The provided [Offset] will move the whole [RenderObject]
+/// outside of the screen, no matter the direction.
 Offset _calcOutOffset(BuildContext context, SlideOutDirection direction) {
   Size screenSize = MediaQueryData.fromWindow(WidgetsBinding.instance!.window).size;
 
@@ -44,6 +50,8 @@ Offset _calcOutOffset(BuildContext context, SlideOutDirection direction) {
   return outOffset;
 }
 
+/// Takes a [RenderObject] and extract it's container [Size] and [Offset]
+/// on the screen as a [_RenderCoordinates] object.
 _RenderCoordinates _getRenderCoordinates(RenderObject? renderObject) {
   Size containerSize;
   Offset positionOnScreen;
@@ -64,23 +72,26 @@ _RenderCoordinates _getRenderCoordinates(RenderObject? renderObject) {
   return _RenderCoordinates(containerSize, positionOnScreen);
 }
 
+/// A simple extension for taking only the [dx] or [dy] value with the other one being zero.
 extension _Intersect on Offset {
-  /// Zeroing the dx value without changing the dy
+  /// Zeroing the [dx] value without changing the [dy].
   Offset get withZeroX => Offset(0.0, dy);
 
-  /// Zeroing the dy value without changing the dx
+  /// Zeroing the [dy] value without changing the [dx].
   Offset get withZeroY => Offset(dx, 0.0);
 }
 
-/// Holds the container size and the position on the screen of the rendered object
+/// Holds the container [size] and the [position] on the screen of the [RenderObject].
 class _RenderCoordinates {
-  /// The rendered container size
+  /// The [RenderObject] container size.
   final Size size;
 
-  /// The rendered container position on screen
+  /// The [RenderObject] container position on screen.
   final Offset position;
 
-  /// Creates a RenderCoordinates. The first argument sets [size], the rendered container size,
-  /// and the second sets [position], the position of the rendered container on screen.
+  /// Creates a [_RenderCoordinates] object.
+  ///
+  /// The first argument sets [size], the [RenderObject] container size,
+  /// and the second sets [position], the position of the [RenderObject] container on screen.
   _RenderCoordinates(this.size, this.position);
 }

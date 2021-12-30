@@ -1,12 +1,62 @@
 part of serayon_sliding_switcher;
 
+/// A widget wrapper with the ability to swap between two different
+/// child widgets or hide them both by sliding them out of the screen and back.
+///
+/// This widget uses a [SlidingSwitcherController] that handles the change
+/// events of [SliderState] and [SlideOutDirection].
+///
+/// With [SliderState] controlling the visibility of the children:
+/// - [SliderState.none] - No child is visible
+/// - [SliderState.first] - The first child is visible
+/// - [SliderState.second] - The second child is visible
+///
+/// And the [SlideOutDirection] controlling when the child widgets will enter/exit from/to:
+/// - [SlideOutDirection.left] - The left
+/// - [SlideOutDirection.up] - The top
+/// - [SlideOutDirection.right] - The right
+/// - [SlideOutDirection.down] - The bottom
+/// - [SlideOutDirection.start] - The left on LTR, and the right on RTL
+/// - [SlideOutDirection.end] - The right on LTR, and the left on RTL
+///
+/// The widget can adapt to realtime direction changing, and re-calculate the
+/// distances to exit/enter the screen completely, a behaviour you can disable
+/// by changing the [canChangeDirection] property, which is true by default.
+///
+/// The [firstChild] property must be provided and not be null, but the [secondChild]
+/// property can be omitted. This widget have 3 states, in which one of them hide them
+/// both, so you don't need to omit the [secondChild] to have a state when no child
+/// is shown, but, using the [SlidingSwitcherController.toggleState] method, you can
+/// easily switch between visible and hidden if you provide only the [firstChild].
 class SlidingSwitcherWidget extends StatefulWidget {
+  /// The sliding controller managing this [SlidingSwitcherWidget]
   final SlidingSwitcherController slidingStateController;
+
+  /// The animation duration for all exit/enter/swap animations.
   final Duration duration;
+
+  /// Sets the ability of [SlidingSwitcherController] to change the
+  /// [SlidingSwitcherWidget] direction across it's lifetime.
   final bool canChangeDirection;
+
+  /// The first child present in the [SliderState.first] of this
+  /// [SlidingSwitcherWidget].
   final Widget firstChild;
 
+  /// The second child present in the [SliderState.second] of this
+  /// [SlidingSwitcherWidget].
   final Widget? secondChild;
+
+  /// Creates a [SlidingSwitcherWidget].
+  ///
+  /// The [firstChild] property must be provided and not be null, but
+  /// the second child can be emitted if not necessary.
+  ///
+  /// The default animation duration is 350 millis, you can use the
+  /// property [duration] to change it.
+  ///
+  /// The default behaviour of changing direction is enabled, you can
+  /// use the property [canChangeDirection] to control that behaviour.
   const SlidingSwitcherWidget({
     Key? key,
     required this.slidingStateController,
@@ -21,14 +71,27 @@ class SlidingSwitcherWidget extends StatefulWidget {
 }
 
 class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with SingleTickerProviderStateMixin, SlidingSwitcherListener {
+  /// The animation controller to coordinate this charade.
   late AnimationController _controller;
 
+  /// The translate animation for the first child.
   late Animation<Offset> _translateOutAnimation;
+
+  /// The translate animation for the second child.
   late Animation<Offset> _translateInAnimation;
+
+  /// The fade animation for the first child.
   late Animation<double> _fadeOutAnimation;
+
+  /// The fade animation for the second child.
   late Animation<double> _fadeInAnimation;
 
+  /// The cached direction in case the widget don't support
+  /// direction changing.
   late SlideOutDirection _direction;
+
+  /// Update the translate animations based on the current [RenderObject]
+  /// to get the children widget out of the screen completely.
   void _updateAnimations() {
     WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
       // not mounted, [RenderObject] won't be valid
@@ -53,6 +116,8 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
     });
   }
 
+  /// Adds itself to the current [SlidingSwitcherController]'s listeners,
+  /// and updates the translate animations.
   void _updateController() {
     widget.slidingStateController.addListener(this);
 
@@ -61,6 +126,8 @@ class _SlidingSwitcherWidgetState extends State<SlidingSwitcherWidget> with Sing
     _updateAnimations();
   }
 
+  /// Takes a [target] value to animate to, and doing that using the full
+  /// animation duration instead of the resulted fraction.
   void _animateToTarget(double target) {
     // if we already here... why we need to move?
     if (_controller.value == target) return;
